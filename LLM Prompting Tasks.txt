@@ -1,0 +1,32 @@
+LLM Prompting Tasks
+# All UI needs to be in French, only language coding is in English convention.
+# Please ask me before continuing between each steps of this project.
+# This is for only for the French market and doesn't exceed other countries except Monaco, for each of the decision you take : put you in a role of a job Talent Acquisition
+Your role will be with the help of the AI to automate an application by picking the important element of a resume following the job offer title and description.
+You will also include a dashboard for job offer listings and a page for uploading a resume.
+1. Upload the resume
+In this task, you need to welcome the user by asking his resume, the user can also amend and delete it in the future.
+The resume will be stored on Supabase as a  Blob file.
+This will be done in "Overview" page at the left of the second step.
+2. Resume in a corpus area
+In this task, you need to put the resume in a corpus (textarea) or PDF edit with Markdown where the user can handle modifications with text formatting on his resume. Segment it with "Profil, Education, Profesional Experiences, Hobbies, Certifications, Skills". These segments need to be translated in French.
+If you could not add anything in a segment, leave it at a blank.
+Keep all of these segments in Supabase associated with an user key.
+This will serve as a template for the resume to be send for the job offer.
+User can add other segment if he wants
+This will be done in "Overview" page at the right of the first step.
+3. List job offer France Travail inside a Jobs page
+After consulting France Travail documentation, by using oAuth 2.0 system, with my client ID and secret specified on '.env' file, add a way to generate a refresh token on it for every time we need it. Try to get all the job list (API : `https://francetravail.io/produits-partages/catalogue/offres-emploi/documentation#/api-reference/operations/recupererListeOffre`) for the user query filtered by his ROME code. To retrieve the ROME code `codeRome`, consult `https://francetravail.io/produits-partages/catalogue/romeo/documentation#/api-reference/operations/Pr%C3%A9diction%20des%20appellations%20m%C3%A9tier%20du%20ROME`: if the scorePrediction is less than 0.7, use the (`motsCles`) to include the full query.   Retrieve on each job at least title, description, city, wage and contract type and above all the link to apply and button `Generate resume` based on user segments.
+The job list needs to be on tab called 'Public offer'
+4. List job offer Adzuna API inside a Jobs page 
+In this task, you need to consult Adzuna API and list all job offer with my `app_id` and `app_key` specified on '.env' file in France on a tab called 'Private offer'. Before starting, try to add on an another window each segment filter that Adzuna can accept (for example: wage). In this way, the France Travail user choice will have not effect on the dashboard. Retrieve on each job at least title, description, city, wage and contract type and above all the link to apply and button `Generate resume`.
+5. Add segments and a query to filter the job offer inside a Jobs page
+On this task, you need to add UI components to filter the job offer.
+Before starting, look at France Travail API documentation (`https://francetravail.io/produits-partages/catalogue/offres-emploi/documentation#/api-reference/operations/recupererListeOffre`), add segments like city, department or region (don't forget to add a dropdown from all cities, departments or regions in France by using `communes-france-2025.csv` and `departements-france.csv` from the workpath), radius, experience, disponibility, duration of contract, disabled accepted, wage and you can add other field if needed from France Travail API documentation. Please be conform with France Travail API documentation when adding UI components to filter.
+Look also at Adzuna API documentation (`https://developer.adzuna.com/activedocs#/default/search`), add segments like city, department or region (don't forget to add a dropdown from all cities, departments or regions in France by using `communes-france-2025.csv` and `departements-france.csv` from the workpath), radius, salary, contract or permanent, full or part-time, name of company. You can add other fields if needed from Adzuna Documentation. Please be conform with API documentation when adding UI components to filter.
+6. Classify job list from Adzuna and France Travail
+On this task, 
+7. Generate the resume by matching element on the job offer and resume
+With the help of AI, you need to be careful of the offer and add each of the following parts on the resume : Name, Contacts, Full name of job offer,  Key skills (see on job offer description, otherwise see in France Travail what is the key skills for this offer), Profesional Experience (with achievements), Education (all details from resume), Languages, Realisations (personal project or blogs, work research...), Hobbies. The resume needs to be readed in linear way and the form style respects French grammar, keep it simple, not overloaded.
+8. Job offer storage in Supabase
+In this task, you need to store all the job offer listed for an user. As these data need to be keep only each 24 hours, call only the France Travail API to refresh after 24 hours to refresh his outdated data or when the user performs a refresh on the registered data (on this case, only append the new data to old data) or when user made an another query of the old cached datas.

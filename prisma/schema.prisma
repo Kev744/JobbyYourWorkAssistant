@@ -1,0 +1,290 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model UserCredential {
+  user_id       String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  email         String   @unique
+  password_hash String
+  created_at    DateTime @default(now()) @db.Timestamptz(6)
+  updated_at    DateTime @default(now()) @updatedAt @db.Timestamptz(6)
+
+  @@index([email], map: "user_credentials_email_idx")
+  @@map("user_credentials")
+}
+
+model ResumeFile {
+  id                  String                    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id             String                    @db.Uuid
+  original_file_name  String
+  mime_type           String
+  file_size_bytes     BigInt
+  checksum_sha256     String
+  storage_bucket      String                    @default("cv-originals")
+  storage_path        String
+  created_at          DateTime                  @default(now()) @db.Timestamptz(6)
+  updated_at          DateTime                  @default(now()) @updatedAt @db.Timestamptz(6)
+  resume_versions     ResumeVersion[]
+  section_extractions ResumeSectionExtraction[]
+
+  @@unique([user_id, checksum_sha256])
+  @@index([user_id, created_at(sort: Desc)], map: "resume_files_user_created_idx")
+  @@map("resume_files")
+}
+
+model ResumeVersion {
+  id                  String                    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id             String                    @db.Uuid
+  resume_file_id      String?                   @db.Uuid
+  version_number      Int
+  title               String
+  corpus_content      String
+  pdf_storage_path    String?
+  docx_storage_path   String?
+  created_at          DateTime                  @default(now()) @db.Timestamptz(6)
+  updated_at          DateTime                  @default(now()) @updatedAt @db.Timestamptz(6)
+  resume_files        ResumeFile?               @relation(fields: [resume_file_id], references: [id], onDelete: Cascade)
+  candidate_profiles  CandidateProfile[]
+  generated_resumes   GeneratedResume[]
+  section_extractions ResumeSectionExtraction[]
+
+  @@unique([resume_file_id, version_number])
+  @@index([user_id, resume_file_id, created_at(sort: Desc)], map: "resume_versions_user_file_created_idx")
+  @@index([user_id, created_at(sort: Desc)], map: "resume_versions_user_created_idx")
+  @@map("resume_versions")
+}
+
+model CandidateProfile {
+  id                       String               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id                  String               @db.Uuid
+  resume_version_id        String               @db.Uuid
+  summary                  String               @default("")
+  profession               String               @default("")
+  education                Json                 @default("[]")
+  professional_experiences Json                 @default("[]")
+  hobbies                  Json                 @default("[]")
+  certifications           Json                 @default("[]")
+  skills                   Json                 @default("[]")
+  languages                Json                 @default("[]")
+  achievements             Json                 @default("[]")
+  identity_contact         Json                 @default("{}")
+  scoring_payload          Json                 @default("{}")
+  rome_code                String               @default("Inconnu")
+  rome_prediction_score    Decimal?             @db.Decimal
+  generation_warnings      Json                 @default("[]")
+  confirmation_status      String               @default("draft")
+  created_at               DateTime             @default(now()) @db.Timestamptz(6)
+  updated_at               DateTime             @default(now()) @updatedAt @db.Timestamptz(6)
+  resume_versions          ResumeVersion        @relation(fields: [resume_version_id], references: [id], onDelete: Cascade)
+  profile_requirements     ProfileRequirement[]
+  scored_offers            ScoredOffer[]
+  generated_resumes        GeneratedResume[]
+
+  @@unique([user_id, resume_version_id])
+  @@index([user_id, updated_at(sort: Desc)], map: "candidate_profiles_user_updated_idx")
+  @@map("candidate_profiles")
+}
+
+model ProfileRequirement {
+  id                          String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id                     String            @unique @db.Uuid
+  candidate_profile_id        String?           @db.Uuid
+  profession_keywords         String            @default("")
+  city                        Json?
+  department                  Json?
+  region                      Json?
+  radius_km                   Int               @default(10)
+  experience_level            String            @default("")
+  availability                String            @default("")
+  contract_types              String[]          @default([])
+  disabled_accepted           Boolean           @default(false)
+  salary_min_annual_gross_eur Int?
+  remote_preference           String            @default("")
+  full_time                   Boolean?
+  permanent                   Boolean?
+  company_name                String            @default("")
+  provider_notes              String[]          @default([])
+  created_at                  DateTime          @default(now()) @db.Timestamptz(6)
+  updated_at                  DateTime          @default(now()) @updatedAt @db.Timestamptz(6)
+  candidate_profiles          CandidateProfile? @relation(fields: [candidate_profile_id], references: [id], onDelete: SetNull)
+
+  @@map("profile_requirements")
+}
+
+model JobOfferSource {
+  source             String           @id
+  label              String
+  created_at         DateTime         @default(now()) @db.Timestamptz(6)
+  job_offers         JobOffer[]
+  job_search_queries JobSearchQuery[]
+  scored_offers      ScoredOffer[]
+
+  @@map("job_offer_sources")
+}
+
+model JobOffer {
+  id                       String                   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  source                   String
+  source_offer_id          String
+  created_by               String?                  @db.Uuid
+  offer_id                 String
+  title                    String
+  description              String
+  company_name             String?
+  location                 Json                     @default("{}")
+  normalized_offer         Json
+  published_at             DateTime?                @db.Timestamptz(6)
+  application_url          String?
+  first_seen_at            DateTime                 @default(now()) @db.Timestamptz(6)
+  last_seen_at             DateTime                 @default(now()) @db.Timestamptz(6)
+  updated_at               DateTime                 @default(now()) @updatedAt @db.Timestamptz(6)
+  job_offer_sources        JobOfferSource           @relation(fields: [source], references: [source], onDelete: Restrict)
+  job_offer_search_results JobOfferSearchResult[]
+  scored_offers            ScoredOffer[]
+  generated_resumes        GeneratedResume[]
+  applications             Application[]
+
+  @@unique([source, source_offer_id])
+  @@index([created_by], map: "job_offers_created_by_idx")
+  @@index([offer_id], map: "job_offers_offer_id_idx")
+  @@map("job_offers")
+}
+
+model JobSearchQuery {
+  id                       String                   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id                  String                   @db.Uuid
+  source                   String
+  query_hash               String
+  query_payload            Json                     @default("{}")
+  warnings                 String[]                 @default([])
+  result_count             Int                      @default(0)
+  cache_status             String                   @default("miss")
+  fetched_at               DateTime                 @default(now()) @db.Timestamptz(6)
+  expires_at               DateTime                 @db.Timestamptz(6)
+  created_at               DateTime                 @default(now()) @db.Timestamptz(6)
+  job_offer_sources        JobOfferSource           @relation(fields: [source], references: [source], onDelete: Restrict)
+  job_offer_search_results JobOfferSearchResult[]
+
+  @@index([user_id, source, query_hash, expires_at(sort: Desc)], map: "job_search_queries_user_source_hash_idx")
+  @@map("job_search_queries")
+}
+
+model JobOfferSearchResult {
+  id                 String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id            String         @db.Uuid
+  query_id           String         @db.Uuid
+  job_offer_id       String         @db.Uuid
+  rank               Int
+  created_at         DateTime       @default(now()) @db.Timestamptz(6)
+  job_search_queries JobSearchQuery @relation(fields: [query_id], references: [id], onDelete: Cascade)
+  job_offers         JobOffer       @relation(fields: [job_offer_id], references: [id], onDelete: Cascade)
+
+  @@unique([query_id, job_offer_id])
+  @@index([query_id, rank], map: "job_offer_search_results_query_rank_idx")
+  @@map("job_offer_search_results")
+}
+
+model ScoredOffer {
+  id                    String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id               String           @db.Uuid
+  candidate_profile_id  String           @db.Uuid
+  job_offer_id          String           @db.Uuid
+  source                String
+  final_score           Decimal          @db.Decimal
+  score_breakdown       Json
+  matched_features      Json             @default("{}")
+  missing_must_haves    String[]         @default([])
+  explanation           String           @default("")
+  created_at            DateTime         @default(now()) @db.Timestamptz(6)
+  updated_at            DateTime         @default(now()) @updatedAt @db.Timestamptz(6)
+  candidate_profiles    CandidateProfile @relation(fields: [candidate_profile_id], references: [id], onDelete: Cascade)
+  job_offers            JobOffer         @relation(fields: [job_offer_id], references: [id], onDelete: Cascade)
+  job_offer_sources     JobOfferSource   @relation(fields: [source], references: [source], onDelete: Restrict)
+
+  @@unique([user_id, candidate_profile_id, job_offer_id])
+  @@map("scored_offers")
+}
+
+model GeneratedResume {
+  id                    String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id               String           @db.Uuid
+  candidate_profile_id  String           @db.Uuid
+  resume_version_id     String           @db.Uuid
+  job_offer_id          String           @db.Uuid
+  title                 String
+  content               String
+  evidence_map          Json             @default("[]")
+  user_instructions     String           @default("")
+  pdf_storage_path      String?
+  docx_storage_path     String?
+  created_at            DateTime         @default(now()) @db.Timestamptz(6)
+  updated_at            DateTime         @default(now()) @updatedAt @db.Timestamptz(6)
+  candidate_profiles    CandidateProfile @relation(fields: [candidate_profile_id], references: [id], onDelete: Cascade)
+  resume_versions       ResumeVersion    @relation(fields: [resume_version_id], references: [id], onDelete: Cascade)
+  job_offers            JobOffer         @relation(fields: [job_offer_id], references: [id], onDelete: Cascade)
+  applications          Application[]
+
+  @@index([user_id, created_at(sort: Desc)], map: "generated_resumes_user_created_idx")
+  @@map("generated_resumes")
+}
+
+model Application {
+  id                         String                   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id                    String                   @db.Uuid
+  generated_resume_id        String                   @db.Uuid
+  job_offer_id               String                   @db.Uuid
+  offer_snapshot             Json
+  generated_resume_pdf_path  String?
+  generated_resume_docx_path String?
+  application_url            String?
+  current_status             String                   @default("pending")
+  created_at                 DateTime                 @default(now()) @db.Timestamptz(6)
+  updated_at                 DateTime                 @default(now()) @updatedAt @db.Timestamptz(6)
+  generated_resumes          GeneratedResume          @relation(fields: [generated_resume_id], references: [id], onDelete: Cascade)
+  job_offers                 JobOffer                 @relation(fields: [job_offer_id], references: [id], onDelete: Cascade)
+  status_events              ApplicationStatusEvent[]
+
+  @@unique([user_id, generated_resume_id])
+  @@index([user_id, current_status, updated_at(sort: Desc)], map: "applications_user_status_idx")
+  @@index([user_id, updated_at(sort: Desc)], map: "applications_user_updated_idx")
+  @@map("applications")
+}
+
+model ApplicationStatusEvent {
+  id             String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id        String      @db.Uuid
+  application_id String      @db.Uuid
+  from_status    String?
+  to_status      String
+  note           String      @default("")
+  created_at     DateTime    @default(now()) @db.Timestamptz(6)
+  applications   Application @relation(fields: [application_id], references: [id], onDelete: Cascade)
+
+  @@index([application_id, created_at(sort: Desc)], map: "application_status_events_application_created_idx")
+  @@map("application_status_events")
+}
+
+model ResumeSectionExtraction {
+  id                    String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id               String         @db.Uuid
+  resume_file_id        String?        @db.Uuid
+  resume_version_id     String?        @db.Uuid
+  source_content_sha256 String
+  model                 String         @default("")
+  sections              Json           @default("{}")
+  markdown_content      String         @default("")
+  warnings              Json           @default("[]")
+  created_at            DateTime       @default(now()) @db.Timestamptz(6)
+  updated_at            DateTime       @default(now()) @updatedAt @db.Timestamptz(6)
+  resume_files          ResumeFile?    @relation(fields: [resume_file_id], references: [id], onDelete: Cascade)
+  resume_versions       ResumeVersion? @relation(fields: [resume_version_id], references: [id], onDelete: Cascade)
+
+  @@unique([user_id, source_content_sha256])
+  @@index([user_id, created_at(sort: Desc)], map: "resume_section_extractions_user_created_at_idx")
+  @@map("resume_section_extractions")
+}

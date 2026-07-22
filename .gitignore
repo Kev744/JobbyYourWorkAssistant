@@ -1,0 +1,11 @@
+.next/
+.jest-cache/
+coverage/
+node_modules/
+out/
+src/generated/
+*.tsbuildinfo
+.env.local
+.env.*
+!.env.example
+.env*.local
