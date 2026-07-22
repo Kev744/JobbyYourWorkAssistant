@@ -20,6 +20,7 @@
     "db:migrate-dev": "prisma migrate dev",
     "db:migrate-prod": "prisma migrate deploy",
     "build": "next build",
+    "start": "next start",
     "automation:test": "playwright test",
     "automation:headed": "playwright test --headed",
     "automation:report": "playwright show-report",
