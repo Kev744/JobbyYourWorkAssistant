@@ -1,4 +1,5 @@
 import type { CandidateProfile, EducationItem } from '@/types';
+import { getOpenAiKey } from '@/lib/env';
 import {
   cleanProfessionalExperienceSummary,
   extractEducationItems,
@@ -185,7 +186,7 @@ export async function extractResumeSectionsWithOpenAI(params: {
   title: string;
   corpusContent: string;
 }): Promise<ResumeSectionExtraction> {
-  const apiKey = process.env.OPENAI_KEY;
+  const apiKey = getOpenAiKey();
 
   if (!apiKey) {
     throw new Error('OPENAI_KEY is missing.');

@@ -3,10 +3,10 @@ import { existsSync, readFileSync } from 'node:fs';
 
 loadDotEnvLocal();
 
-const databaseUrl = process.env.DATABASE_URL || process.env.POSTGRES_URL;
+const databaseUrl = getDatabaseUrl();
 
 if (!databaseUrl) {
-  console.error('DATABASE_URL or POSTGRES_URL is required.');
+  console.error('A PostgreSQL URL is required for the active NODE_ENV.');
   process.exit(1);
 }
 
@@ -27,6 +27,23 @@ function runPrisma(args) {
 function loadDotEnvLocal() {
   loadEnvFile('.env');
   loadEnvFile('.env.local');
+  const environment = getRuntimeEnvironment();
+  loadEnvFile(`.env.${environment}`);
+  loadEnvFile(`.env.${environment}.local`);
+}
+
+function getRuntimeEnvironment() {
+  return process.env.NODE_ENV === 'production' ? 'production' : 'development';
+}
+
+function getEnvironmentValue(name) {
+  const environmentSuffix = getRuntimeEnvironment().toUpperCase();
+
+  return process.env[`${name}_${environmentSuffix}`] || process.env[name] || '';
+}
+
+function getDatabaseUrl() {
+  return getEnvironmentValue('DATABASE_URL') || getEnvironmentValue('POSTGRES_URL');
 }
 
 function loadEnvFile(filePath) {

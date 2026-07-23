@@ -5,6 +5,7 @@ import type {
   ResumeVersionRecord,
   SkillItem,
 } from '@/types';
+import { getOpenAiKey } from '@/lib/env';
 import { sortLanguageItems } from '@/lib/language-levels';
 
 export interface TailoredResumeDraft {
@@ -304,7 +305,7 @@ export async function generateTailoredResumeDraftWithOpenAI(input: {
   userInstructions?: string;
   openAiApiKey?: string;
 }): Promise<TailoredResumeDraft> {
-  const apiKey = input.openAiApiKey?.trim() || process.env.OPENAI_KEY;
+  const apiKey = input.openAiApiKey?.trim() || getOpenAiKey();
 
   if (!apiKey) {
     throw new Error('OPENAI_KEY is missing.');

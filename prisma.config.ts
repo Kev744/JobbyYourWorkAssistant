@@ -4,6 +4,8 @@ import { defineConfig } from 'prisma/config';
 
 loadEnvFile('.env');
 loadEnvFile('.env.local');
+loadEnvFile(`.env.${getRuntimeEnvironment()}`);
+loadEnvFile(`.env.${getRuntimeEnvironment()}.local`);
 
 export default defineConfig({
   schema: 'prisma/schema.prisma',
@@ -11,9 +13,23 @@ export default defineConfig({
     path: 'prisma/migrations',
   },
   datasource: {
-    url: process.env.DATABASE_URL || process.env.POSTGRES_URL,
+    url: getDatabaseUrl(),
   },
 });
+
+function getRuntimeEnvironment(): 'development' | 'production' {
+  return process.env.NODE_ENV === 'production' ? 'production' : 'development';
+}
+
+function getEnvironmentValue(name: string): string {
+  const environmentSuffix = getRuntimeEnvironment().toUpperCase();
+
+  return process.env[`${name}_${environmentSuffix}`] || process.env[name] || '';
+}
+
+function getDatabaseUrl(): string {
+  return getEnvironmentValue('DATABASE_URL') || getEnvironmentValue('POSTGRES_URL');
+}
 
 function loadEnvFile(filePath: string) {
   if (!existsSync(filePath)) {

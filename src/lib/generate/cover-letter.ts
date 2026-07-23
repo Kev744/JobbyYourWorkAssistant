@@ -8,6 +8,7 @@ import type {
   ResumeVersionRecord,
   SkillItem,
 } from '@/types';
+import { getOpenAiKey } from '@/lib/env';
 
 const OPENAI_RESPONSES_URL = 'https://api.openai.com/v1/responses';
 const DEFAULT_COVER_LETTER_MODEL = 'gpt-5.4';
@@ -163,7 +164,7 @@ export async function generateCoverLetterDraftWithOpenAI(input: {
   userInstructions?: string;
   openAiApiKey?: string;
 }): Promise<CoverLetterDraft> {
-  const apiKey = input.openAiApiKey?.trim() || process.env.OPENAI_KEY;
+  const apiKey = input.openAiApiKey?.trim() || getOpenAiKey();
 
   if (!apiKey) {
     throw new Error('OPENAI_KEY is missing.');

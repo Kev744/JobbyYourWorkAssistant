@@ -1,4 +1,5 @@
 import { normalizeCorpusText } from '@/lib/export/simple-documents';
+import { getOpenAiKey } from '@/lib/env';
 
 const OPENAI_RESPONSES_URL = 'https://api.openai.com/v1/responses';
 const DEFAULT_OCR_MODEL = 'gpt-5.5';
@@ -25,7 +26,7 @@ export async function extractResumeTextWithOpenAIOcr(params: {
   mimeType: string;
   fileName: string;
 }): Promise<string> {
-  const apiKey = process.env.OPENAI_KEY;
+  const apiKey = getOpenAiKey();
 
   if (!apiKey) {
     throw new Error('OPENAI_KEY is missing.');
